@@ -1,0 +1,35 @@
+{
+  "type": "bundle",
+  "id": "bundle--duplicate-active-test",
+  "spec_version": "2.1",
+  "objects": [
+    {
+      "type": "attack-pattern",
+      "id": "attack-pattern--first-active",
+      "name": "Command and Scripting Interpreter (First Active)",
+      "description": "First instance of T1059.",
+      "revoked": false,
+      "x_mitre_deprecated": false,
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1059"
+        }
+      ]
+    },
+    {
+      "type": "attack-pattern",
+      "id": "attack-pattern--second-active",
+      "name": "Command and Scripting Interpreter (Second Active)",
+      "description": "Second duplicate instance of T1059.",
+      "revoked": false,
+      "x_mitre_deprecated": false,
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1059"
+        }
+      ]
+    }
+  ]
+}
