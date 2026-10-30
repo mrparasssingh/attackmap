@@ -48,6 +48,18 @@ A university defensive-research system that ingests unstructured cyber threat in
 
 ---
 
+## Data provenance
+
+- Source: mitre-attack/attack-stix-data, enterprise-attack/enterprise-attack-20.0.json
+- Downloaded: 2026-10-30
+- SHA-256: 81113ba98afa2928f3dcff62022539f7ce30c315c32e14422f11ff95ce534352 (verified independently with PowerShell Get-FileHash)
+- Parsed (active, non-revoked, non-deprecated): 227 parent techniques, 706 total including sub-techniques
+- The real file is NOT committed. Download it yourself and run:
+  mvn test "-Dattack.stix.path=<path to enterprise-attack-20.0.json>"
+- Without the property, the real-data smoke test is skipped (Skipped: 1); with it, expect Tests run: 17, Failures: 0, Skipped: 0.
+
+---
+
 ## Build & Test Instructions
 
 ### Running Standard Unit Tests
@@ -83,3 +95,4 @@ This project uses data from the MITRE ATT&CK® knowledge base.
 
 ### Attribution
 *(Attribution text to be pasted here by user)*
+
