@@ -94,5 +94,5 @@ This project uses data from the MITRE ATT&CK® knowledge base.
 - **MITRE ATT&CK Terms of Use**: [https://attack.mitre.org/resources/terms-of-use/](https://attack.mitre.org/resources/terms-of-use/)
 
 ### Attribution
-*(Attribution text to be pasted here by user)*
+TODO: User to paste exact MITRE ATT&CK notice here.
 
