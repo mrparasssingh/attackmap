@@ -48,6 +48,44 @@ A university defensive-research system that ingests unstructured cyber threat in
 
 ---
 
+## Phase 2: KeywordRetriever Baseline
+
+A keyword- and regular-expression-based retriever baseline implementing `Retriever`. It constructs an in-memory index of tokenized technique names and descriptions during initialization, scoring input sentences against indexed techniques.
+
+### Tokenization
+- Text is converted to lowercase using `Locale.ROOT`.
+- Tokens are split on any character that is not a Unicode letter or digit (`[^\p{L}\p{N}]+`).
+- Tokens shorter than 2 characters and stopwords from `src/main/resources/stopwords.txt` are discarded.
+- Security-relevant words (`run`, `execute`, `remote`, `file`, `access`, `use`, etc.) are explicitly excluded from the stopwords list to preserve domain indicators.
+- *Future Improvement*: Stemming (e.g. Porter or Snowball stemmer) is not implemented in this phase and is planned as a future enhancement.
+
+### Scoring Formula
+Let $Q$ be the set of unique query tokens (each word counted once). For each indexed technique $t$:
+
+$$\text{score}(t) = \sum_{q \in Q} \Bigl( \mathbf{1}_{q \in \text{NameTokens}(t)} \cdot W_{\text{name}} + \mathbf{1}_{q \in \text{DescTokens}(t)} \cdot W_{\text{desc}} \Bigr) + \mathbf{1}_{\text{sentence contains } t.\text{id}()} \cdot B_{\text{id}}$$
+
+- $W_{\text{name}} = 3.0$ (`Config.NAME_WEIGHT`)
+- $W_{\text{desc}} = 1.0$ (`Config.DESC_WEIGHT`)
+- $B_{\text{id}} = 100.0$ (`Config.ID_MATCH_BONUS`)
+- If a query token is present in both name and description, both weights contribute ($3.0 + 1.0 = 4.0$).
+- Explicit ID bonus uses case-sensitive regex `\bT\d{4}(\.\d{3})?\b`. An explicit mention of sub-technique `T1059.001` boosts only `T1059.001` (not `T1059`). An explicit mention of `T1059` boosts only `T1059` (not sub-techniques). IDs not present in the indexed list are safely ignored.
+
+### Ranking Contract
+1. Only techniques with $\text{score} > 0.0$ are returned; zero-score techniques are omitted because they represent no evidence.
+2. Returned list is sorted in descending score order. Ties are broken deterministically by ascending technique ID (`String.compareTo`).
+3. Binary-friendly floating-point weights ensure accumulated scores behave like exact integers, allowing exact score comparisons via `Double.compare`.
+4. Returns at most $k$ predictions.
+5. Returns an empty unmodifiable list if sentence is null or blank, if $k \le 0$, or if the technique index is empty.
+6. The returned list is immutable (`Collections.unmodifiableList`).
+7. Each `Prediction` contains `(techniqueId, score, evidenceSentence)` where `evidenceSentence` is the unmodified input string.
+
+### Known Limitations
+1. **Exact-Match Sensitivity (No Stemming/Lemmatization)**: Variations such as "executes", "executing", or "execution" are treated as distinct words unless explicitly listed in the description or name.
+2. **Lack of Semantic Understanding (Vocabulary Mismatch)**: Synonyms and paraphrased attacker activities (e.g. "dumped LSASS memory" vs. "OS Credential Dumping") cannot match unless overlapping keyword tokens exist.
+3. **No Term Frequency Inverted Document Frequency (TF-IDF)**: Common non-stopword words across many techniques (e.g., "system", "information") have the same weight as highly discriminative words (e.g., "powershell").
+
+---
+
 ## Data provenance
 
 - Source: mitre-attack/attack-stix-data, enterprise-attack/enterprise-attack-20.0.json

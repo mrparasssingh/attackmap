@@ -16,3 +16,18 @@ Append-only, dated log of meaningful architectural and design decisions.
   - **Why**: Directly matches ATT&CK STIX `phase_name` for the `mitre-attack` kill chain without ambiguous display transformations.
 - **Decision**: Directory junction `college-ka-java-ka-project` created.
   - **Why**: The project root folder is held in use by the IDE; creating an NTFS directory junction eliminates spaces for CLI/Maven paths while preserving workspace integrity.
+
+## 2026-11-01 | Gemini 3.8 Flash
+- **Decision**: Filter out zero-score techniques in `KeywordRetriever.rank(sentence, k)` (return only techniques with score > 0).
+  - **Why**: Zero-score techniques share no keyword overlap or explicit ID references with the input sentence and do not constitute evidence. Omitting them eliminates noise, keeps predictions focused on actionable findings, and maintains an honest representation of model retrieval confidence.
+  - **Alternatives considered**: Padding the top-k list with arbitrary zero-score techniques (rejected: misleading to analysts and harms downstream evaluation precision).
+- **Decision**: Use an explicit ID bonus `ID_MATCH_BONUS = 100.0` with case-sensitive regex `\bT\d{4}(\.\d{3})?\b`.
+  - **Why**: When a CTI author explicitly writes a technique ID in the threat sentence (e.g. "T1059.001"), this is an unambiguous, high-confidence signal that should dominate general keyword overlap. Setting the bonus to 100.0 guarantees that the referenced technique outranks purely incidental keyword matches while preserving deterministic tie-breaking. Sub-technique IDs match specifically to the sub-technique and do not boost parent techniques, preventing cross-level pollution.
+  - **Alternatives considered**: Case-insensitive matching (rejected: causes false positives on words starting with t like "t1000" or arbitrary tokens), fuzzy ID matching (rejected: fragile and unverified).
+- **Decision**: Use binary-friendly floating-point constants (`NAME_WEIGHT = 3.0`, `DESC_WEIGHT = 1.0`, `ID_MATCH_BONUS = 100.0`) and `Double.compare` for sorting.
+  - **Why**: Standard IEEE-754 representation represents exact integers losslessly, avoiding subtle precision drift in keyword scoring and ensuring deterministic tie detection across JVM platforms.
+  - **Alternatives considered**: Integer scores (rejected: future retrievers like TF-IDF or dense embeddings will need floating-point similarity scores in `Prediction.score`).
+- **Decision**: Implement `TextTokenizer` as a separate reusable utility class in `com.team.attackmap.util`.
+  - **Why**: Clean separation of concerns; enables independent testing of token normalization, punctuation handling, and stopword loading without coupling directly to retriever indexing state.
+  - **Alternatives considered**: Inlining tokenization logic into `KeywordRetriever` (rejected: duplicates code when subsequent retrievers or evaluators tokenize text).
+

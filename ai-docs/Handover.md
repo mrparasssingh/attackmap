@@ -22,7 +22,24 @@ Durable, dated history of finished sessions.
   - Finalized `README.md` with Data Provenance and official MITRE ATT&CK attribution notice.
   - Created public GitHub repository and pushed `main` and `phase-1-done` tag:
     - URL: https://github.com/mrparasssingh/attackmap
-- **In progress**: Phase 1 finalized and pushed to remote. Awaiting user instructions for Phase 2.
+- **In progress**: None. Phase 1 and Phase 2 completed.
 - **Broken**: None.
 - **Avoid**: Do not auto-download datasets or report PDFs. Do not invent labels or evaluation splits.
 - **Open questions**: None for Phase 1.
+
+## 2026-11-01 | Gemini 3.8 Flash — Phase 2: KeywordRetriever Baseline Completed
+- **Done**:
+  - Implemented `TextTokenizer` supporting Unicode-aware letter/digit splitting, lowercase normalization with `Locale.ROOT`, short-token filtering (< 2 chars), and stopword filtering.
+  - Added `stopwords.txt` under `src/main/resources/` with standard English stopwords, strictly preserving security-relevant tokens (`run`, `execute`, `remote`, `file`, `access`, `use`).
+  - Added retrieval weights (`NAME_WEIGHT = 3.0`, `DESC_WEIGHT = 1.0`, `ID_MATCH_BONUS = 100.0`) in `Config.java`.
+  - Implemented `KeywordRetriever` conforming to `Retriever` interface with immutable index construction and thread safety.
+  - Enforced scoring contract: sum over unique query tokens of name/desc weights + explicit-ID regex bonus (`\bT\d{4}(\.\d{3})?\b`).
+  - Implemented tie-breaking on ascending technique ID and zero-score exclusion contract.
+  - Implemented comprehensive JUnit 5 tests covering all 23 scenarios in `KeywordRetrieverTest` and 9 in `TextTokenizerTest`.
+  - Added paper-verifiable hand-calculated scoring test with exact arithmetic commented in code.
+  - Verified clean compilation with `-Xlint:all` (zero warnings, zero errors) and green test suite (`Tests run: 49, Failures: 0, Errors: 0, Skipped: 1`).
+  - Updated `README.md` with scoring formula, ranking contract, and known limitations.
+- **In progress**: Phase 2 completed. Ready for review.
+- **Broken**: None.
+- **Avoid**: Do not introduce stemming in this phase without approval. No new dependencies.
+- **Open questions**: See Phase 2 report.
