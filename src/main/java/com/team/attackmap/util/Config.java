@@ -58,6 +58,21 @@ public final class Config {
      */
     public static final double ID_MATCH_BONUS = 100.0;
 
+    /**
+     * Minimum valid 0-based sentence index in a report.
+     */
+    public static final int MIN_SENTENCE_INDEX = 0;
+
+    /**
+     * Numeric constant representing zero.
+     */
+    public static final int ZERO = 0;
+
+    /**
+     * Numeric constant representing one.
+     */
+    public static final int ONE = 1;
+
     private Config() {
         // Utility configuration class; prevent instantiation.
     }

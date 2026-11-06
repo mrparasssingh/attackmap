@@ -1,0 +1,10 @@
+# Abbreviations that should not trigger sentence boundaries
+e.g.
+i.e.
+U.S.
+Dr.
+vs.
+etc.
+Fig.
+No.
+St.

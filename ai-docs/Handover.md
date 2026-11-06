@@ -43,3 +43,22 @@ Durable, dated history of finished sessions.
 - **Broken**: None.
 - **Avoid**: Do not introduce stemming in this phase without approval. No new dependencies.
 - **Open questions**: See Phase 2 report.
+
+
+## 2026-11-06 | Gemini 3.8 Flash — Phase 1b: Report Ingestion Completed
+- **Done**:
+  - Implemented immutable `Sentence(reportId, index, text)` record with trimmed fields, non-null/non-blank validation, and index >= 0 constraint.
+  - Implemented `SentenceSplitter` supporting terminal punctuation splitting (`.`, `!`, `?` followed by whitespace and uppercase letter, digit, quote, or bracket).
+  - Normalization in `SentenceSplitter`: drops page number lines, joins hyphenated line breaks (`word-\nrest` -> `wordrest` when continuation is lowercase), joins hard-wrapped lines, collapses whitespace, and preserves bullet/numbered lists as sentence boundaries.
+  - Added protections against false splits inside technique IDs (`T1059.001`), abbreviations from `src/main/resources/abbreviations.txt`, technical entities (`malware.exe`, `evil.example.com`, `192.168.1.10`, `v2.1.3`, `3.5`), defanged indicators, URLs, and paths. Digit-requiring abbreviations (`no.`, `fig.`, `st.`) suppress splits only when followed by digits.
+  - Integrated Apache PDFBox `3.0.8` using `Loader.loadPDF` with try-with-resources.
+  - Implemented `PdfExtractionException` with `serialVersionUID` for missing, corrupt, directory, or password-protected PDFs.
+  - Implemented `PdfExtractor` allowing owner-password-only encrypted PDFs and logging warnings on blank documents.
+  - Implemented `ReportLoader` supporting `.pdf` and UTF-8 `.txt` (with automatic `\uFEFF` BOM stripping), deriving `reportId` from file name without extension and generating 0..n-1 indices.
+  - Added comprehensive JUnit 5 tests (`SentenceTest`, `SentenceSplitterTest`, `PdfExtractorTest`, `ReportLoaderTest`) generating synthetic PDFs in temp directories.
+  - Clean compile with `-Xlint:all` (zero warnings, zero errors) and green test suite (`Tests run: 119, Failures: 0, Errors: 0, Skipped: 1`).
+  - Updated `README.md`, `ai-docs/Flow.md`, `ai-docs/Decisions.md`, and reset `ai-docs/working.md` to IDLE.
+- **In progress**: Phase 1b completed.
+- **Broken**: None.
+- **Avoid**: Never commit real reports or binary fixtures. Never use `PDDocument.load`.
+- **Open questions**: None.

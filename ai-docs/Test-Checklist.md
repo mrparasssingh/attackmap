@@ -60,3 +60,40 @@ Concrete commands to run and expected output before any change counts as done.
      - Returned prediction list is unmodifiable and defensively copied.
 
 
+
+## Phase 1b Checks (Report Ingestion)
+
+1. **Clean Test Execution**:
+   - Command: `mvn -q test`
+   - Expected Output: Exit code 0, 0 failures, 0 errors (`Tests run: 119, Failures: 0, Errors: 0, Skipped: 1`).
+
+2. **Sentence Model & Splitter Checks (JUnit 5)**:
+   - `SentenceTest`:
+     - Trims reportId and text.
+     - Validates non-null, non-blank strings and index >= 0.
+     - Record equality, hashCode, and property accessors verified.
+   - `SentenceSplitterTest`:
+     - Normalization drops standalone page number lines and `Page N [of M]` patterns.
+     - Joins hyphenated line breaks when continuation begins lowercase.
+     - Retains hyphen and space when continuation begins uppercase.
+     - Joins hard-wrapped lines and collapses multiple whitespace characters.
+     - Treats bullet lines (`-`, `*`, `•`) and numbered list items as distinct sentence boundaries.
+     - Terminal punctuation splitting (`.`, `!`, `?`) followed by whitespace and uppercase letter, digit, quotation mark, or bracket.
+     - Guards against false splits in technical entities (`T1059.001`, `malware.exe`, `evil.example.com`, `evil[.]example[.]com`, `192.168.1.10`, `v2.1.3`, `3.5`, URLs, paths).
+     - Suppresses splitting on registered abbreviations; digit-requiring abbreviations (`no.`, `fig.`, `st.`) suppress splits only when followed by digits.
+     - Full Unicode / non-ASCII support and verified determinism.
+
+3. **PDF Extractor & Report Loader Checks (JUnit 5)**:
+   - `PdfExtractorTest`:
+     - Try-with-resources resource management verified (PDF file deletable immediately on Windows).
+     - Throws `PdfExtractionException` for null path, missing file, directory path, corrupt file, and user-password-protected PDF.
+     - Extracts text from PDFs protected solely by owner password with empty user password.
+     - Returns empty string and logs warning for blank PDFs.
+     - Preserves multi-page text extraction order.
+   - `ReportLoaderTest`:
+     - Dispatches `.pdf` to `PdfExtractor` and `.txt` to UTF-8 reader.
+     - Strips leading UTF-8 BOM (`\uFEFF`) from text files.
+     - Throws `IllegalArgumentException` for unsupported file extensions.
+     - Derives `reportId` from file name without extension.
+     - Assigns sequential 0-based indices `0..n-1`.
+     - Returns unmodifiable sentence list.

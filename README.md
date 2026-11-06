@@ -48,6 +48,24 @@ A university defensive-research system that ingests unstructured cyber threat in
 
 ---
 
+## Phase 1b: Report Ingestion & Sentence Splitting
+
+A rule-based text processing pipeline that normalizes unstructured CTI text and segments it into discrete sentences for downstream technique retrieval:
+- **`PdfExtractor`**: Apache PDFBox 3.x text extractor (`Loader.loadPDF`) using try-with-resources. Gracefully permits owner-password-only encrypted PDFs while rejecting missing/directory/corrupt files and user-password-protected PDFs via `PdfExtractionException`. Logs warnings and returns an empty string for blank documents.
+- **`ReportLoader`**: Dispatches `.pdf` files through `PdfExtractor` and reads `.txt` files in UTF-8 (auto-stripping a leading byte order mark `\uFEFF`). Derives `reportId` from the filename (excluding extension) and produces immutable `Sentence` records with ordered 0-based indices `0..n-1`.
+- **`SentenceSplitter`**: Normalizes whitespace, drops page number lines, joins lowercase-continuation hyphenated line wraps, treats list markers as sentence boundaries, and segments on terminal punctuation with entity and abbreviation guards.
+
+### SentenceSplitter Limitations
+1. **Headings merge into the next sentence**: Unpunctuated section headers or standalone title lines lacking terminal punctuation merge into the subsequent sentence when not formatted as list items.
+2. **Digit-only lines dropped as page numbers**: Lines containing only digits (e.g. `42` or `105`) are discarded during normalization as presumptive page numbers.
+3. **List markers kept in the sentence**: Bullet points (`-`, `*`, `•`) and numbered list prefixes (`1.`, `2)`) are preserved at the beginning of the extracted sentence rather than stripped.
+4. **Captions like "Table 1." split**: Table captions formatted with a period followed by capitalized text (e.g. `Table 1. System telemetry`) trigger a sentence split after `Table 1.` because `Table` is not an abbreviation.
+5. **Abbreviation-ending sentences not split**: Sentences ending in a registered abbreviation (e.g. `Artifacts included logs, etc. The adversary...`) are not split across that boundary, because abbreviations suppress delimiters to prevent mid-sentence fragmentation.
+6. **Non-UTF-8 .txt files not supported**: Text reports must be encoded in UTF-8 (an optional UTF-8 BOM `\uFEFF` is detected and stripped). Non-UTF-8 encodings are not supported and will fail or corrupt character decoding.
+7. **Multi-column PDFs may interleave columns**: PDF text extraction processes content in visual/stream layout order, which can cause multi-column or sidebar layouts in complex PDFs to interleave text across columns rather than reading column-by-column.
+
+---
+
 ## Phase 2: KeywordRetriever Baseline
 
 A keyword- and regular-expression-based retriever baseline implementing `Retriever`. It constructs an in-memory index of tokenized technique names and descriptions during initialization, scoring input sentences against indexed techniques.
