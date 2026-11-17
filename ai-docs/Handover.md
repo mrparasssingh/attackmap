@@ -95,3 +95,17 @@ Durable, dated history of finished sessions.
 - **Broken**: None.
 - **Avoid**: Never use loose CSV parsing that ignores RFC 4180 quotes or silently replaces invalid UTF-8 bytes.
 - **Open questions**: None.
+
+## 2026-11-18 | Gemini 3.8 Flash — Session Handoff to Shambhavi
+- **Done**:
+  - Full audit of codebase, security, and test suite: green (`Tests run: 182, Failures: 0, Errors: 0, Skipped: 1`).
+  - Pushed all completed commits up to `e04a054` to GitHub `origin/main`.
+  - Phase 1, Phase 1b, Phase 2, Phase 3, and Phase 4 Step A are completed and committed.
+- **In progress**:
+  - Phase 4 Step B: `RetrievalMetrics` static functions, metric records (`topK`, `MRR`, detection `P/R/F1` at threshold `t`), and unit tests with paper-calculated cases.
+- **Broken**: None.
+- **Avoid**:
+  - No new external dependencies (CSV parsing and evaluation metrics must be pure Java).
+  - No magic numbers outside `Config.java`.
+  - Never weaken tests; always follow TDD (tests first, show failing, then implement).
+- **Open questions**: None.
