@@ -104,6 +104,57 @@ $$\text{score}(t) = \sum_{q \in Q} \Bigl( \mathbf{1}_{q \in \text{NameTokens}(t)
 
 ---
 
+## Phase 3: TfIdfRetriever Baseline
+
+A Term Frequency-Inverse Document Frequency (TF-IDF) retriever implementing `Retriever`. It constructs a vector space model over the candidate technique corpus using smoothed inverse document frequencies and sublinear term frequencies, scoring threat report sentences via cosine similarity.
+
+### Tokenization & Vocabulary
+- Document text is defined as `technique.name() + " " + technique.description()`.
+- Tokenized via `TextTokenizer` using Unicode-aware letter/digit splitting, lowercase normalization with `Locale.ROOT`, short-token pruning (< 2 chars), and stopword removal (`stopwords.txt`).
+- The vocabulary and IDF weights are fitted **strictly on technique documents only**, never on query/report sentences.
+- Out-of-vocabulary terms (terms never seen in any technique document) are pruned prior to query vector normalization.
+
+### Mathematical Formulation
+1. **Smoothed Inverse Document Frequency (IDF)**:
+   For term $t$ appearing in $\text{df}(t)$ technique documents across a corpus of $N$ techniques:
+   $$\text{idf}(t) = \ln\left(\frac{1 + N}{1 + \text{df}(t)}\right) + 1$$
+   Smoothing ensures $\text{idf}(t) \ge 1.0$ for all vocabulary terms and avoids division by zero.
+
+2. **Sublinear Term Frequency (TF)**:
+   To prevent repeated mentions from dominating disproportionately:
+   $$\text{tf}_{\text{sub}}(t) = 1 + \ln(\text{tf}(t)) \quad \text{for } \text{tf}(t) \ge 1$$
+   If $\text{tf}(t) = 0$, the term weight is 0.
+
+3. **TF-IDF Vectors & L2 Normalization**:
+   Unnormalized weight for term $t$ in vector $\mathbf{v}$ (document or query):
+   $$w(t) = \text{tf}_{\text{sub}}(t) \cdot \text{idf}(t)$$
+   Normalized vector $\hat{\mathbf{v}}$ under Euclidean ($L_2$) norm:
+   $$\hat{\mathbf{v}} = \frac{\mathbf{v}}{\|\mathbf{v}\|_2} = \frac{\mathbf{v}}{\sqrt{\sum_{t \in V} w(t)^2}}$$
+   If $\|\mathbf{v}\|_2 = 0$ (e.g., a document or sentence with no valid vocabulary tokens), the vector is all zeros and its similarity score is strictly 0.0 (preventing NaN or division by zero).
+
+4. **Cosine Similarity & Scoring**:
+   Cosine similarity between normalized query vector $\hat{\mathbf{q}}$ and normalized document vector $\hat{\mathbf{d}}$:
+   $$\text{cosine}(\hat{\mathbf{q}}, \hat{\mathbf{d}}) = \hat{\mathbf{q}} \cdot \hat{\mathbf{d}} = \sum_{t \in V} \hat{q}(t) \cdot \hat{d}(t)$$
+   Final scoring adds the explicit technique ID match bonus:
+   $$\text{score}(t) = \text{cosine}(\hat{\mathbf{q}}, \hat{\mathbf{d}}_t) + \mathbf{1}_{\text{sentence contains } t.\text{id}()} \cdot B_{\text{id}}$$
+   - $B_{\text{id}} = 100.0$ (`Config.ID_MATCH_BONUS`), matched via case-sensitive regex `\bT\d{4}(?:\.\d{3})?\b`.
+   - Explicit IDs must belong to the indexed technique set. A sub-technique ID bonuses only that sub-technique; a parent ID bonuses only the parent.
+
+### Ranking Contract
+1. Only techniques with $\text{score} > 0.0$ are returned; zero-score techniques are excluded.
+2. Predictions are sorted in descending order of score; ties are broken by ascending technique ID (`String.compareTo`).
+3. Returns at most $k$ predictions in an immutable list (`Collections.unmodifiableList`).
+4. Returns an empty unmodifiable list if `sentence` is null or blank, if $k \le 0$, or if the candidate index is empty.
+5. Preserves the exact, unmodified input string as `evidenceSentence`.
+6. Deterministic and thread-safe.
+
+### Known Limitations
+1. **Out-of-vocabulary query terms ignored**: Query terms outside the technique vocabulary are ignored before normalization; queries containing only out-of-vocabulary terms or stopwords yield a zero-norm vector and produce an empty prediction list.
+2. **Floating-point precision in tie-breaking**: Mathematically equal scores may differ in the last digits due to floating-point arithmetic ordering across terms, so the ID tie-break is not guaranteed for near-identical descriptions.
+3. **Dominance of explicit technique IDs**: Sentences with explicit technique IDs rank first by design (bonus 100) and should be reported separately in evaluation to avoid skewing text-only retrieval metrics.
+
+---
+
 ## Data provenance
 
 - Source: mitre-attack/attack-stix-data, enterprise-attack/enterprise-attack-20.0.json

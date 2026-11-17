@@ -86,3 +86,61 @@ Unmodifiable List<String> of clean sentences
      v
 Sentence(reportId, index, text)
 ```
+
+## Phase 3: TfIdfRetriever Flow
+
+```
+1. Index Construction:
+List<Technique>
+     |
+     v
+TfIdfRetriever(List<Technique> techniques)
+     |
+     |--> Defensive copy: List.copyOf(techniques)
+     |--> For each technique:
+     |       |--> docText = tech.name() + " " + tech.description()
+     |       |--> tokens = TextTokenizer.tokenize(docText)
+     |       |--> Compute term frequencies tf(t, d)
+     |       |--> Update document frequencies df(t)
+     |
+     |--> Fit smoothed IDF on technique vocabulary:
+     |       idf(t) = ln((1 + N) / (1 + df(t))) + 1
+     |
+     |--> For each technique document:
+     |       |--> Unnormalized weight w(t, d) = (1 + ln(tf(t, d))) * idf(t)
+     |       |--> Euclidean norm ||v_d||_2 = sqrt(sum_t w(t, d)^2)
+     |       |--> Normalized vector v_hat_d(t) = w(t, d) / ||v_d||_2
+     |
+     v
+Immutable IndexedTechnique list & idfMap
+
+2. Query Execution:
+Threat sentence + k
+     |
+     v
+TfIdfRetriever.rank(String sentence, int k)
+     |
+     |--> Guard check: null/blank sentence, k <= 0, or empty index -> return Collections.emptyList()
+     |
+     |--> Tokenize sentence via TextTokenizer; filter to vocabulary terms:
+     |       |--> Compute query tf(t, q) for t in vocabulary
+     |       |--> Unnormalized query weight w(t, q) = (1 + ln(tf(t, q))) * idf(t)
+     |       |--> Euclidean norm ||v_q||_2 = sqrt(sum_t w(t, q)^2)
+     |       |--> Normalized query vector q_hat(t) = w(t, q) / ||v_q||_2
+     |
+     |--> Extract explicit technique IDs matching \bT\d{4}(?:\.\d{3})?\b
+     |
+     |--> For each IndexedTechnique:
+     |       |--> If ||v_q||_2 > 0 and ||v_d||_2 > 0:
+     |       |       cosine = sum_{t in q_hat} q_hat(t) * d_hat(t)
+     |       |    else:
+     |       |       cosine = 0.0
+     |       |--> score = cosine + (ID_MATCH_BONUS if explicit ID matches else 0.0)
+     |       |--> If score > 0.0 -> add to candidate predictions
+     |
+     |--> Sort descending by score, ascending by techniqueId on ties
+     |--> Truncate to at most k entries
+     |
+     v
+Unmodifiable List<Prediction(techniqueId, score, evidenceSentence)>
+```

@@ -97,3 +97,36 @@ Concrete commands to run and expected output before any change counts as done.
      - Derives `reportId` from file name without extension.
      - Assigns sequential 0-based indices `0..n-1`.
      - Returns unmodifiable sentence list.
+
+## Phase 3 Checks (TfIdfRetriever)
+
+1. **Clean Test Execution**:
+   - Command: `mvn -q test`
+   - Expected Output: Exit code 0, 0 failures, 0 errors (`Tests run: 139, Failures: 0, Errors: 0, Skipped: 1`).
+
+2. **TF-IDF Retriever Coverage Checks (JUnit 5)**:
+   - `TfIdfRetrieverTest`:
+     - Unique-term match ranks matching technique first.
+     - Rare term outweighs common term across candidate corpus.
+     - Zero-norm query produces empty prediction list without NaN or division by zero.
+     - Out-of-vocabulary-only query returns empty prediction list.
+     - Ties in score are broken by ascending technique ID.
+     - Parameter k bounds handling (k = 1, k = 3, k = 100, k = 0, k = -1).
+     - Null or blank sentences return empty unmodifiable list.
+     - Empty candidate technique list allowed without error.
+     - Explicit ID regex bonus (+100.0) applied with parent/child specificity; lowercase IDs and unknown IDs do not bonus.
+     - Non-ASCII / Unicode characters handled cleanly.
+     - Determinism verified across repeated invocations.
+     - Result list is unmodifiable.
+     - Constructor defensively copies candidate technique list.
+     - Null constructor argument throws `NullPointerException`.
+     - Zero-norm candidate document scores 0.0 and is excluded from predictions.
+     - `evidenceSentence` strictly equals the original input string.
+     - Sentence with only valid technique ID returns that technique via ID bonus.
+     - Sublinear TF query weighting test (`alpha alpha beta`) confirms `1 + ln(2)` weighting vs `2.0` within `1e-9`.
+     - Stopwords-only query returns empty list.
+     - Paper-derived hand-calculated test on 3-document corpus confirms cosine similarities within `1e-9`.
+
+3. **Compiler & Warnings Check**:
+   - Command: `mvn clean test-compile -DcompilerArgument="-Xlint:all -Werror"`
+   - Expected: Clean compilation with 0 warnings and 0 errors.

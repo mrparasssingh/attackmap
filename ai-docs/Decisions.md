@@ -39,3 +39,12 @@ Append-only, dated log of meaningful architectural and design decisions.
   - **Why**: Apache PDFBox is the standard, production-grade open-source Java library for PDF manipulation. Version 3.0.8 is the latest stable 3.x release on Maven Central, using `Loader.loadPDF` for secure and modernized resource loading.
   - **Allowed transitive dependencies**: `org.apache.pdfbox:pdfbox-io:3.0.8`, `org.apache.pdfbox:fontbox:3.0.8`, `commons-logging:commons-logging:1.3.5`.
   - **Alternatives considered**: Apache Tika (too heavyweight, pulls unwanted dependencies), PDFBox 2.x (legacy branch, requires older `PDDocument.load` APIs).
+- **Decision**: In `TfIdfRetriever`, fit IDF strictly on candidate technique documents, never on query or threat report sentences.
+  - **Why**: Maintaining fixed, pre-computed IDF weights preserves strict train/test separation, provides thread-safe immutable lookups, and avoids dynamic vocabulary re-estimation per query.
+  - **Alternatives considered**: Updating IDF dynamically with incoming sentences (rejected: non-deterministic across query order, violates separation of index and query).
+- **Decision**: Use smoothed IDF `ln((1 + N) / (1 + df(t))) + 1` and sublinear TF `1 + ln(tf)`.
+  - **Why**: Standard smoothed formulation guarantees non-negative weights (idf >= 1.0) and avoids division by zero; sublinear TF dampens term repetition so high term frequency does not excessively skew cosine similarities.
+- **Decision**: Represent document and query vectors as sparse `Map<String, Double>` with L2 normalization.
+  - **Why**: Technique descriptions typically contain fewer than 100 unique terms out of a vocabulary of several thousand words. Sparse maps with dot-product iteration over the smaller vector optimize computation time and memory overhead.
+- **Decision**: Assign 0.0 cosine score to zero-norm queries or documents without throwing or producing NaN.
+  - **Why**: Gracefully handles out-of-vocabulary, blank, or stopword-only queries without unexpected exceptions or invalid floating-point values in downstream rankings.
