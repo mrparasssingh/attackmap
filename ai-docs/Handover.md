@@ -62,3 +62,36 @@ Durable, dated history of finished sessions.
 - **Broken**: None.
 - **Avoid**: Never commit real reports or binary fixtures. Never use `PDDocument.load`.
 - **Open questions**: None.
+
+## 2026-11-06 | Gemini 3.8 Flash — Phase 3: TfIdfRetriever Baseline Completed
+- **Done**:
+  - Implemented `TfIdfRetriever` conforming to `Retriever` interface.
+  - Document text constructed as `technique.name() + " " + technique.description()` and tokenized via `TextTokenizer`.
+  - IDF fitted exclusively on technique corpus: `idf(t) = ln((1 + N) / (1 + df(t))) + 1` (smoothed).
+  - Out-of-vocabulary terms pruned; sublinear TF implemented as `1 + ln(tf)`.
+  - TF-IDF vectors normalized under L2 Euclidean norm; dot product cosine similarity computed over sparse maps.
+  - Zero-norm query or document yields score 0.0 without NaN or division by zero.
+  - Explicit-ID regex bonus (+100.0) applied with parent/child specificity for indexed technique IDs.
+  - Ranking contract strictly enforced: score > 0, descending sort, ties broken by ascending technique ID, at most k results, immutable list, exact unmodified evidenceSentence.
+  - Created 20 comprehensive unit tests in `TfIdfRetrieverTest` covering unique matches, rare vs common weighting, zero-norm queries/documents, OOV queries, ties by ID, k handling, null/blank inputs, empty corpus, parent/child ID bonus, non-ASCII Unicode, determinism, unmodifiability, defensive copying, null constructor argument, and two paper-derived hand-calculated tests (`handCalculatedToyCorpusCosine` and `sublinearTfQueryWeighting`).
+  - Clean compile with `-Xlint:all -Werror` (zero warnings, zero errors).
+  - Test suite green: `Tests run: 139, Failures: 0, Errors: 0, Skipped: 1`.
+  - Updated `README.md` with Phase 3 formulas, ranking contract, and limitations; updated `ai-docs/Flow.md`, `ai-docs/Decisions.md`, and `tracking/phase-3-tfidf-retriever.md`.
+- **In progress**: None. Phase 3 completed.
+- **Broken**: None.
+- **Avoid**: Never update IDF weights dynamically from query/report sentences.
+- **Open questions**: None.
+
+## 2026-11-07 | Gemini 3.8 Flash — Phase 4 Step A: Gold Standard Loader Completed
+- **Done**:
+  - Implemented `LabelType` enum (`EXPLICIT`, `AMBIGUOUS`, `INFERRED`, `NONE`).
+  - Implemented `GoldFormatException` unchecked exception carrying 1-based `lineNumber`.
+  - Implemented immutable `GoldRecord` record with defensive copying, trimming, and validation.
+  - Implemented `GoldCsvLoader` with RFC 4180 parsing, strict UTF-8 decoding without replacement characters, leading BOM stripping, multi-line quoted record line tracking, flexible header matching, and complete validation.
+  - Created 43 unit tests in `GoldCsvLoaderTest` covering all format constraints, error conditions, edge cases, and unmodifiability.
+  - Clean compile with `-Xlint:all -Werror` (zero warnings, zero errors).
+  - Test suite green: `Tests run: 182, Failures: 0, Errors: 0, Skipped: 1`.
+- **In progress**: Phase 4 Step B (RetrievalMetrics).
+- **Broken**: None.
+- **Avoid**: Never use loose CSV parsing that ignores RFC 4180 quotes or silently replaces invalid UTF-8 bytes.
+- **Open questions**: None.
